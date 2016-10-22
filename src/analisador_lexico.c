@@ -4,11 +4,12 @@
 #define ASCII_LF 10
 #define ASCII_SP 32
 
-int _tabelaTransicoes[12][128];
+int _tabelaTransicoes[11][128];
 
 void preencheTransicao();
 int eDigito(int ch);
 int eAlpha(int ch);
+int eSimbolo(int ch);
 int ProximoEstado (int estadoAnterior, char ch);
 void EscreveToken (int estado, char* caracteresLidos);
 int verificarReservado (char* identificador);
@@ -68,44 +69,43 @@ void EscreveToken (int estado, char* caracteresLidos){
 
   char tipo[255];
   switch (estado) {
-		case 1:
-    	strcpy(tipo, "pontuacao");
-    	break;
-    case 2:
-    	strcpy(tipo, "operador");
-    	break;
-    case 3:
-    	strcpy(tipo, "operador_composto");
-    	break;
-    case 4:
-        if (verificarReservado(caracteresLidos)) {
+    case 1:
+    	if (verificarReservado(caracteresLidos)) {
             strcpy(tipo, "palavra_reservada");
         } else {
             strcpy(tipo, "identificador");
         }
     	break;
-    case 5:
+    case 2:
     	strcpy(tipo, "inteiro");
     	break;
-    case 7:
-    	strcpy(tipo, "ponto_flutuante");
+    case 4:
+    	strcpy(tipo, "float");
     	break;
+    case 5:
+    	strcpy(tipo, "simbolo");
+    	break;
+    case 6:
+    case 7:
     case 8:
     	strcpy(tipo, "operador");
+    	break;
+    case 10:
+    	strcpy(tipo, "string");
     	break;
   }
   fprintf(lexico, "[%s, %s]\n", tipo,  caracteresLidos);
 }
 
 int verificarReservado (char* identificador) {
-    int reservado = strcmp(identificador, "return") == 0 ||
-                    strcmp(identificador, "if") == 0 ||
-                    strcmp(identificador, "while") == 0 ||
-                    strcmp(identificador, "for") == 0 ||
-                    strcmp(identificador, "int") == 0 ||
-                    strcmp(identificador, "float") == 0 ||
-                    strcmp(identificador, "else") == 0 ||
-                    strcmp(identificador, "char") == 0;
+    int reservado = strcmp(identificador, "maine") == 0 ||
+                    strcmp(identificador, "ife") == 0 ||
+                    strcmp(identificador, "whilee") == 0 ||
+                    strcmp(identificador, "inte") == 0 ||
+                    strcmp(identificador, "floate") == 0 ||
+                    strcmp(identificador, "elsee") == 0 ||
+                    strcmp(identificador, "returne") == 0 ||
+                    strcmp(identificador, "stringe") == 0;
     return reservado;
 }
 
@@ -113,7 +113,7 @@ void preencheTransicao () {
   int coluna;
   int linha;
   //preenchendo tudo com -1
-  for (linha = 0; linha < 12; linha++) {
+  for (linha = 0; linha < 11; linha++) {
     for (coluna = 0; coluna < 128; coluna++) {
     	_tabelaTransicoes[linha][coluna] = -1;
     }
@@ -121,98 +121,73 @@ void preencheTransicao () {
 
   //estado 0
   for (coluna = 0; coluna < 128; coluna++) {
-    _tabelaTransicoes[0][coluna] = 0;
+    if (eAlpha(coluna)) {
+        _tabelaTransicoes[0][coluna] = 1;
+    } else if (eDigito(coluna)) {
+        _tabelaTransicoes[0][coluna] = 2;
+    } else if (eSimbolo(coluna)) {
+        _tabelaTransicoes[0][coluna] = 5;
+    } else if (coluna == (int) '>' || coluna == (int) '<' || coluna == (int) '!' || coluna == (int) '=') {
+        _tabelaTransicoes[0][coluna] = 6;
+    } else if (coluna == (int) '*' || coluna == (int) '+' || coluna == (int) '/' || coluna == (int) '-') {
+        _tabelaTransicoes[0][coluna] = 8;
+    } else if (coluna == (int) '"') {
+        _tabelaTransicoes[0][coluna] = 9;
+    } else {
+        _tabelaTransicoes[0][coluna] = 0;
+    }
   }
-
-    _tabelaTransicoes[0][(int) ';'] = 1;
-    _tabelaTransicoes[0][(int) '['] = 1;
-    _tabelaTransicoes[0][(int) ']'] = 1;
-    _tabelaTransicoes[0][(int) '('] = 1;
-    _tabelaTransicoes[0][(int) ')'] = 1;
-    _tabelaTransicoes[0][(int) '{'] = 1;
-    _tabelaTransicoes[0][(int) '}'] = 1;
-    _tabelaTransicoes[0][(int) ','] = 1;
-
-  for (coluna = (int) 'a'; coluna <= (int) 'z'; coluna++) {
-  	_tabelaTransicoes[0][coluna] = 4;
-  }
-  for (coluna = (int) 'A'; coluna <= (int) 'Z'; coluna++) {
-  	_tabelaTransicoes[0][coluna] = 4;
-  }
-
-  for (coluna = (int) '0'; coluna <= (int) '9'; coluna++) {
-  	_tabelaTransicoes[0][coluna] = 5;
-  }
-
-  _tabelaTransicoes[0][(int) '+'] = 2;
-  _tabelaTransicoes[0][(int) '-'] = 2;
-  _tabelaTransicoes[0][(int) '*'] = 2;
-  _tabelaTransicoes[0][(int) '='] = 2;
-  _tabelaTransicoes[0][(int) '!'] = 2;
-  _tabelaTransicoes[0][(int) '<'] = 2;
-  _tabelaTransicoes[0][(int) '>'] = 2;
-
-  _tabelaTransicoes[0][(int) '/'] = 8;
-
 
   //estado 1
-  //tudo -1
+  for (coluna = 0; coluna < 128; coluna++) {
+    if (eAlpha(coluna) || eDigito(coluna)) {
+        _tabelaTransicoes[1][coluna] = 1;
+    }
+  }
 
   //estado 2
-  _tabelaTransicoes[2][(int) '='] = 3;
+  for (coluna = 0; coluna < 128; coluna++) {
+    if (eDigito(coluna)) {
+        _tabelaTransicoes[2][coluna] = 2;
+    } else if (coluna == (int) '.') {
+        _tabelaTransicoes[2][coluna] = 3;
+    }
+  }
 
   //estado 3
-  //tudo -1
+  for (coluna = 0; coluna < 128; coluna++) {
+    if (eDigito(coluna)) {
+        _tabelaTransicoes[3][coluna] = 4;
+    }
+  }
 
   //estado 4
   for (coluna = 0; coluna < 128; coluna++) {
-    if (eDigito(coluna) || eAlpha(coluna)) {
-      //se for digito ou alpha
+    if (eDigito(coluna)) {
     	_tabelaTransicoes[4][coluna] = 4;
     }
   }
 
   //estado 5
-  for (coluna = 0; coluna < 128; coluna++) {
-    if (eDigito(coluna)) {
-    	_tabelaTransicoes[5][coluna] = 5;
-    } else if (coluna == (int) '.') {
-      _tabelaTransicoes[5][coluna] = 6;
-    }
-  }
+  //tudo -1
 
   //estado 6
-  for (coluna = (int) '0'; coluna <= (int) '9'; coluna++) {
-    _tabelaTransicoes[6][coluna] = 7;
-  }
+  _tabelaTransicoes[6][(int) '='] = 7;
 
   //estado 7
-  for (coluna = (int) '0'; coluna <= (int) '9'; coluna++) {
-    _tabelaTransicoes[7][coluna] = 7;
-  }
+  //tudo -1
 
   //estado 8
-  _tabelaTransicoes[8][(int) '/'] = 9;
-  _tabelaTransicoes[8][(int) '='] = 3;
-  _tabelaTransicoes[8][(int) '*'] = 10;
+ //tudo -1
 
   //estado 9
   for (coluna = 0; coluna < 128; coluna++) {
     _tabelaTransicoes[9][coluna] = 9;
   }
-  _tabelaTransicoes[9][ASCII_LF] = 0;
+  _tabelaTransicoes[9][(int) '"'] = 10;
 
   //estado 10
-  for (coluna = 0; coluna < 128; coluna++) {
-    _tabelaTransicoes[10][coluna] = 10;
-  }
-  _tabelaTransicoes[10][(int) '*'] = 11;
-
-  //estado 11
-  for (coluna = 0; coluna < 128; coluna++) {
-    _tabelaTransicoes[11][coluna] = 10;
-  }
-  _tabelaTransicoes[11][(int) '/'] = 0;
+  //tudo -1
 }
 
 int eDigito (int ch) {
@@ -221,6 +196,11 @@ int eDigito (int ch) {
 
 int eAlpha (int ch) {
   return (ch >= (int) 'a' && ch <= (int) 'z') || (ch >= (int) 'A' && ch <= (int) 'Z');
+}
+
+int eSimbolo (int ch) {
+    return ch == (int) ';' || ch == (int) '[' || ch == (int) ']'
+                || ch == (int) '(' || ch == (int) ')' || ch == (int) '{' || ch == (int) '}' || ch == (int) ',';
 }
 
 int ProximoEstado (int estadoAnterior, char caractere){
