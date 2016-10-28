@@ -1,23 +1,29 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "analisador_lexico.h"
+
 #define ASCII_LF 10
 #define ASCII_SP 32
 
-int _tabelaTransicoes[11][128];
+int _tabelaTransicoes[13][128];
 
 void preencheTransicao();
 int eDigito(int ch);
 int eAlpha(int ch);
 int eSimbolo(int ch);
 int ProximoEstado (int estadoAnterior, char ch);
-void EscreveToken (int estado, char* caracteresLidos);
+token EscreveToken (int estado, char* caracteresLidos);
 int verificarReservado (char* identificador);
 
-FILE *lexico;
+void fnLexico (token *retLex) {
+    int idxLex;
+    token tmpLex;
+    for (idxLex = 0; idxLex<1024; idxLex++) {
+        strcpy(retLex[idxLex].tipo, "vazio");
+    }
+    idxLex = 0;
 
-int main () {
-    lexico = fopen("lexico.txt", "w");
     preencheTransicao(_tabelaTransicoes);
     char caracteresLidos[255];
     char proximoCaractere = 'x';
@@ -39,7 +45,8 @@ int main () {
         if (proximoEstado == -1){
             consome = 0;
             if (strlen(caracteresLidos) > 0) {
-                EscreveToken(estadoAtual, caracteresLidos);
+                tmpLex = EscreveToken(estadoAtual, caracteresLidos);
+                retLex[idxLex++] = tmpLex;
             }
             proximoEstado = 0;
             posicao = -1;
@@ -59,42 +66,41 @@ int main () {
     } while (proximoCaractere != EOF);
 
     fclose(fonte);
-    fclose(lexico);
-
-    return 0;
 }
 
-void EscreveToken (int estado, char* caracteresLidos){
+token EscreveToken (int estado, char* caracteresLidos){
 
+  token retLex;
 
-  char tipo[255];
   switch (estado) {
     case 1:
     	if (verificarReservado(caracteresLidos)) {
-            strcpy(tipo, "palavra_reservada");
+            strcpy(retLex.tipo, "palavra_reservada");
         } else {
-            strcpy(tipo, "identificador");
+            strcpy(retLex.tipo, "identificador");
         }
     	break;
     case 2:
-    	strcpy(tipo, "inteiro");
+    	strcpy(retLex.tipo, "inteiro");
     	break;
     case 4:
-    	strcpy(tipo, "float");
+    	strcpy(retLex.tipo, "float");
     	break;
     case 5:
-    	strcpy(tipo, "simbolo");
+    	strcpy(retLex.tipo, "simbolo");
     	break;
     case 6:
     case 7:
     case 8:
-    	strcpy(tipo, "operador");
+    	strcpy(retLex.tipo, "operador");
     	break;
     case 10:
-    	strcpy(tipo, "string");
+    	strcpy(retLex.tipo, "string");
     	break;
   }
-  fprintf(lexico, "[%s, %s]\n", tipo,  caracteresLidos);
+  strcpy(retLex.valor, caracteresLidos);
+
+  return retLex;
 }
 
 int verificarReservado (char* identificador) {
@@ -113,7 +119,7 @@ void preencheTransicao () {
   int coluna;
   int linha;
   //preenchendo tudo com -1
-  for (linha = 0; linha < 11; linha++) {
+  for (linha = 0; linha < 13; linha++) {
     for (coluna = 0; coluna < 128; coluna++) {
     	_tabelaTransicoes[linha][coluna] = -1;
     }
@@ -133,6 +139,10 @@ void preencheTransicao () {
         _tabelaTransicoes[0][coluna] = 8;
     } else if (coluna == (int) '"') {
         _tabelaTransicoes[0][coluna] = 9;
+    } else if (coluna == (int) '&') {
+        _tabelaTransicoes[0][coluna] = 11;
+    } else if (coluna == (int) '|') {
+        _tabelaTransicoes[0][coluna] = 12;
     } else {
         _tabelaTransicoes[0][coluna] = 0;
     }
@@ -188,6 +198,12 @@ void preencheTransicao () {
 
   //estado 10
   //tudo -1
+
+  //estado 11
+  _tabelaTransicoes[11][(int) '&'] = 8;
+
+  //estado 12
+  _tabelaTransicoes[12][(int) '|'] = 8;
 }
 
 int eDigito (int ch) {

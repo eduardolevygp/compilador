@@ -1,0 +1,1 @@
+void fnSintatico(token lexico[]);
